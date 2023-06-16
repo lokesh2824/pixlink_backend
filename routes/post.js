@@ -8,6 +8,7 @@ const Post = mongoose.model("Post")
 router.get("/allposts",requireLogin,(req,res)=>{
     Post.find()    //to find all post
     .populate("postedBy","name")   //to expand postedBy feild the econd parameter defines the only feild required
+    .exec()
     .then(posts=>{
         res.json({posts})
     })
@@ -66,5 +67,31 @@ router.get("/myposts",requireLogin,(req,res)=>{
     })
 })
 
+// Delete a post
+    router.delete("/deletepost/:postId", requireLogin, (req, res) => {
+        Post.findOne({ _id: req.params.postId })
+        .populate("postedBy", "_id")
+        .exec()
+        .then(( post) => {
+            if (!post) {
+            return res.status(404).json({ error: "Post not found" });
+            }
+            if (post.postedBy._id.toString() === req.user._id.toString()) {
+            post
+                .deleteOne()
+                .then(() => {
+                res.json({ message: "Post deleted successfully" });
+
+                })
+                .catch((err) => {
+                console.log(err);
+                res.status(500).json({ error: "Internal server error" });
+                });
+            } else {
+            res.status(401).json({ error: "Unauthorized access" });
+            }
+        });
+    });
+    
 
 module.exports = router;
